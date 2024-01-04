@@ -1,24 +1,22 @@
 #pragma once
 #include "stdxx/vector.hxx"
-
-struct Voxel {
-	stx::position3i positon;
-};
+#include "Voxel.hxx"
 
 auto squared(auto x) {
 	return x * x;
 }
 
-stx::vector3f ray_cast(stx::vector3f start, stx::vector3f end, auto process_voxel) {
-	const stx::vector3f dir = stx::normalized(end - start);
-	const stx::vector3f scale {
-		std::sqrt(1                      + squared(dir.y / dir.x) + squared(dir.z / dir.x)),
-		std::sqrt(squared(dir.x / dir.y) + 1                      + squared(dir.z / dir.y)),
-		std::sqrt(squared(dir.x / dir.z) + squared(dir.y / dir.z) + 1),
-	};
+auto div_squared(auto a, auto b) {
+	if(b == 0) return INFINITY;
+	return squared(a / b);
+}
 
-	std::cout << dir << "\n";
-	std::cout << scale << "\n";
+stx::vector3f ray_cast(stx::vector3f start, stx::vector3f dir, auto process_voxel) {
+	const stx::vector3f scale {
+		std::sqrt(1                         + div_squared(dir.y, dir.x) + div_squared(dir.z, dir.x)),
+		std::sqrt(div_squared(dir.x, dir.y) + 1                         + div_squared(dir.z, dir.y)),
+		std::sqrt(div_squared(dir.x, dir.z) + div_squared(dir.y, dir.z) + 1                        ),
+	};
 
 	stx::position3i voxel_coord = stx::position3i{start};
 	stx::vector3f ray_length_1d {0,0,0}; 
@@ -77,9 +75,7 @@ stx::vector3f ray_cast(stx::vector3f start, stx::vector3f end, auto process_voxe
 			ray_length_1d.z += scale.z;
 		} 
 
-		running = process_voxel(Voxel{
-			.positon = voxel_coord,
-		});
+		running = process_voxel(voxel_coord);
 	}
 
 	return start + dir * dist;
