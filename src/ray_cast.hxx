@@ -1,6 +1,7 @@
 #pragma once
 #include "stdxx/vector.hxx"
 #include "Voxel.hxx"
+#include "Intersection.hxx"
 
 auto squared(auto x) {
 	return x * x;
@@ -11,7 +12,7 @@ auto div_squared(auto a, auto b) {
 	return squared(a / b);
 }
 
-stx::vector3f ray_cast(stx::vector3f start, stx::vector3f dir, auto process_voxel) {
+Intersection ray_cast(stx::vector3f start, stx::vector3f dir, auto process_voxel) {
 	const stx::vector3f scale {
 		std::sqrt(1                         + div_squared(dir.y, dir.x) + div_squared(dir.z, dir.x)),
 		std::sqrt(div_squared(dir.x, dir.y) + 1                         + div_squared(dir.z, dir.y)),
@@ -49,10 +50,12 @@ stx::vector3f ray_cast(stx::vector3f start, stx::vector3f dir, auto process_voxe
 		ray_length_1d.z = (voxel_coord.z + 1 - start.z) * scale.z;
 	}
 
-	const float max_dist = 10.f;
+	const float max_dist = 100.f;
 	bool running = true;
 	float dist = 0.f;
+	stx::vector3f normal;
 	while(running && (dist < max_dist)) {
+
 		const float shortest = std::min({
 			ray_length_1d.x,
 			ray_length_1d.y,
@@ -63,20 +66,33 @@ stx::vector3f ray_cast(stx::vector3f start, stx::vector3f dir, auto process_voxe
 			voxel_coord.x += step.x;
 			dist = ray_length_1d.x;
 			ray_length_1d.x += scale.x;
+			normal = {static_cast<float>(step.x),0,0};
 		} 
 		if(shortest == ray_length_1d.y) {
 			voxel_coord.y += step.y;
 			dist = ray_length_1d.y;
 			ray_length_1d.y += scale.y;
+			normal = {0,static_cast<float>(step.y),0};
 		} 
 		if(shortest == ray_length_1d.z) {
 			voxel_coord.z += step.z;
 			dist = ray_length_1d.z;
 			ray_length_1d.z += scale.z;
+			normal = {0,0, static_cast<float>(step.z)};
 		} 
 
-		running = process_voxel(voxel_coord, dist / max_dist);
+		running = process_voxel(Intersection {
+			.coords = voxel_coord,
+			.point = stx::position3f{voxel_coord},
+			.normal = normal,
+			.depth = dist / max_dist, 
+		});
 	}
 
-	return start + dir * dist;
+	return Intersection {
+		.coords = voxel_coord,
+		.point = stx::position3f{voxel_coord},
+		.normal = normal,
+		.depth = dist / max_dist, 
+	};
 }
