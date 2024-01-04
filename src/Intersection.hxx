@@ -6,4 +6,5 @@ struct Intersection {
     stx::position3f point;
     stx::vector3f normal;
     float depth;
+    bool lost;
 };

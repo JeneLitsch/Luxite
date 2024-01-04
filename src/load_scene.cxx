@@ -16,10 +16,10 @@ Scene load_scene(const std::filesystem::path & path) {
         std::uint8_t a = image_data[4 * i + 3];
 
         scene.voxels.push_back(Voxel{
-            .r = r,
-            .g = g,
-            .b = b,
-            .a = a,
+            .r = static_cast<float>(r) / 255.f,
+            .g = static_cast<float>(g) / 255.f,
+            .b = static_cast<float>(b) / 255.f,
+            .a = static_cast<float>(a) / 255.f,
         });
     }
 

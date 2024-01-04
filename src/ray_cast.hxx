@@ -66,33 +66,35 @@ Intersection ray_cast(stx::vector3f start, stx::vector3f dir, auto process_voxel
 			voxel_coord.x += step.x;
 			dist = ray_length_1d.x;
 			ray_length_1d.x += scale.x;
-			normal = {static_cast<float>(step.x),0,0};
+			normal = {-static_cast<float>(step.x),0,0};
 		} 
 		if(shortest == ray_length_1d.y) {
 			voxel_coord.y += step.y;
 			dist = ray_length_1d.y;
 			ray_length_1d.y += scale.y;
-			normal = {0,static_cast<float>(step.y),0};
+			normal = {0,-static_cast<float>(step.y),0};
 		} 
 		if(shortest == ray_length_1d.z) {
 			voxel_coord.z += step.z;
 			dist = ray_length_1d.z;
 			ray_length_1d.z += scale.z;
-			normal = {0,0, static_cast<float>(step.z)};
+			normal = {0,0, -static_cast<float>(step.z)};
 		} 
 
 		running = process_voxel(Intersection {
 			.coords = voxel_coord,
-			.point = stx::position3f{voxel_coord},
+			.point = stx::position3f{start + dir * dist},
 			.normal = normal,
-			.depth = dist / max_dist, 
+			.depth = dist / max_dist,
+			.lost = false,
 		});
 	}
 
 	return Intersection {
 		.coords = voxel_coord,
-		.point = stx::position3f{voxel_coord},
+		.point = stx::position3f{start + dir * dist},
 		.normal = normal,
-		.depth = dist / max_dist, 
+		.depth = dist / max_dist,
+		.lost = running,
 	};
 }
