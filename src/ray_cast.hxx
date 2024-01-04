@@ -49,7 +49,7 @@ stx::vector3f ray_cast(stx::vector3f start, stx::vector3f dir, auto process_voxe
 		ray_length_1d.z = (voxel_coord.z + 1 - start.z) * scale.z;
 	}
 
-	const float max_dist = 100.f;
+	const float max_dist = 10.f;
 	bool running = true;
 	float dist = 0.f;
 	while(running && (dist < max_dist)) {
@@ -75,7 +75,7 @@ stx::vector3f ray_cast(stx::vector3f start, stx::vector3f dir, auto process_voxe
 			ray_length_1d.z += scale.z;
 		} 
 
-		running = process_voxel(voxel_coord);
+		running = process_voxel(voxel_coord, dist / max_dist);
 	}
 
 	return start + dir * dist;
