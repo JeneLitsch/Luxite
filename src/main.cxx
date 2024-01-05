@@ -1,26 +1,21 @@
 #include <iostream>
 #include <numbers>
 #include <tuple>
+
+#include "stdxx/matrix.hxx"
+#include "stdxx/log.hxx"
+#include "stdxx/json.hxx"
+
+#include "stb/stb_image_write.h"
+
 #include "ray_cast.hxx"
 #include "load_scene.hxx"
-#include "stdxx/matrix.hxx"
-#include "stdxx/quat.hxx"
-#include "stb/stb_image_write.h"
+#include "load_camera.hxx"
+#include "load_resolution.hxx"
 
 #include "Scene.hxx"
 #include "Camera.hxx"
-
-bool print_voxel(stx::position3i coord) {
-	std::cout << coord << "\n";
-	return true;
-}
-
-
-
-float deg_to_rad(float deg) {
-	return deg / 180 * std::numbers::pi_v<float>;
-}
-
+#include "angle.hxx"
 
 
 stx::vector3f reflect(stx::vector3f normal, stx::vector3f ray) {
@@ -97,16 +92,56 @@ std::vector<std::uint8_t> render(stx::size2u size, const Scene & scene, const Ca
 
 
 
-int main() {
-	stx::size2u res {512, 512};
-	const Scene scene = load_scene("test/scenes/a.png");
-	const Camera camera {
-		.position = {-2,-2, 4},
-		.rotation
-			= stx::quatf::from_axis_angle(stx::vector3f{1,0,0},  deg_to_rad(25.f))
-			* stx::quatf::from_axis_angle(stx::vector3f{0,0,1},  deg_to_rad(45.f)),
-	};
+int main(int argc, char ** argv) {
+	stx::log.register_output(std::cout);
 
-	auto data = render({res.x,res.y}, scene, camera);
-	stbi_write_png("test/renders/a.png", res.x,res.y, 4, data.data(), res.x * 4);
+	if(argc < 4) {
+		stx::log[stx::ERROR] 
+			<< "To few arguments were provided. Usage: "
+			<< argv[0] << " <project> <config> <output_path>";
+		return EXIT_FAILURE;
+	}
+
+    const std::filesystem::path in_path {argv[1]};
+    const std::filesystem::path out_path {argv[3]};
+	
+    const stx::json::node data = stx::json::from_file(in_path/"manifest.json");
+    const stx::json::iterator manifest {data};
+
+	const Scene scene = load_scene(in_path, manifest);
+	const stx::size2u resolution = load_resolution(manifest, argv[2]);
+	const Camera camera = load_camera(manifest, argv[2]);
+
+	stx::log[stx::WRITE] << "Luxite: Voxel Raytracer (c) 2024 Sera K. Litsch ";
+
+	stx::log[stx::INFO] << "Scene";
+	stx::log.indent_in();
+	stx::log[stx::WRITE] << "Size:       " << scene.size;
+	stx::log.indent_out();
+	
+	stx::log[stx::INFO] << "Camera";
+	stx::log.indent_in();
+	stx::log[stx::WRITE] << "Position:   " << camera.position;
+	stx::log[stx::WRITE] << "Quaternion: " << camera.rotation;
+	stx::log.indent_out();
+
+	stx::log[stx::INFO] << "Output";
+	stx::log.indent_in();
+	stx::log[stx::WRITE] << "Format:     " << "PNG";
+	stx::log[stx::WRITE] << "Resolution: " << resolution;
+	stx::log.indent_out();
+
+	stx::log[stx::INFO] << "Rendering...";
+	auto rendered_image = render(resolution, scene, camera);
+	stx::log[stx::INFO] << "Renering done";
+
+	stx::log[stx::INFO] << "Writing image...";
+	if(std::filesystem::create_directory(out_path.parent_path())) {
+		stx::log[stx::INFO] 
+			<< "Output directory "
+			<< std::filesystem::canonical(out_path.parent_path())
+			<< " was created.";
+	}
+	stbi_write_png(out_path.c_str(), resolution.x, resolution.y, 4, rendered_image.data(), resolution.x * 4);
+	stx::log[stx::INFO] << "Writing image done!";
 }

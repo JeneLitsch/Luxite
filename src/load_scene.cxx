@@ -1,11 +1,26 @@
 #include "load_scene.hxx"
 #include "stb/stb_image.h"
-#include <ranges>
 
-Scene load_scene(const std::filesystem::path & path) {
+namespace {
+    stx::size3u load_size(const stx::json::iterator json) {
+        if(!json) throw stx::json::format_error{"Cannot load scene size"};
+        const std::optional<std::uint32_t> x = json[0].u32();
+        const std::optional<std::uint32_t> y = json[1].u32();
+        const std::optional<std::uint32_t> z = json[2].u32();
+        if(!x)throw stx::json::format_error{"Cannot load scene size.x"};
+        if(!y)throw stx::json::format_error{"Cannot load scene size.y"};
+        if(!z)throw stx::json::format_error{"Cannot load scene size.z"};
+        return {*x, *y, *z};
+    };
+}
+
+
+Scene load_scene(const std::filesystem::path & path, const stx::json::iterator manifest) {
+    const std::filesystem::path albedo_path = path/"albedo.png";
+
     int image_w, image_h, image_comp;
-    const std::uint8_t * image_data = stbi_load(path.c_str(), &image_w, &image_h, &image_comp, STBI_rgb_alpha);
-    if(image_data == nullptr) throw std::runtime_error{"Cannot load scene: " + path.string()};
+    std::uint8_t * image_data = stbi_load(albedo_path.c_str(), &image_w, &image_h, &image_comp, STBI_rgb_alpha);
+    if(image_data == nullptr) throw std::runtime_error{"Cannot load scene image: " + albedo_path.string()};
     
     Scene scene;
 
@@ -23,7 +38,9 @@ Scene load_scene(const std::filesystem::path & path) {
         });
     }
 
-    scene.size = {8,8,4};
+    scene.size = load_size(manifest["size"]);
+
+    stbi_image_free(image_data);
 
     return scene;
 }

@@ -1,0 +1,20 @@
+{
+    "size" : [8,8,4],
+    "albedo" : "albedo.png",
+    "config" : {
+        "fast" : {
+            "resolution" : [128,128],
+            "camera" : {
+                "position" : [-2,-2,4],
+                "rotation" : [25, 0, 45]
+            }
+        },
+        "full" : {
+            "resolution" : [1024,1024],
+            "camera" : {
+                "position" : [-2,-2,4],
+                "rotation" : [25, 0, 45]
+            }
+        }
+    }
+}
